@@ -1,4 +1,5 @@
 # coding:utf-8
+import argparse
 import os
 import logging
 
@@ -10,8 +11,9 @@ d = enchant.Dict("en_US")
 # print d.check("Hello")
 # print d.check("Helo")
 
-PATH = "D:\\workspace\\CNCF\\jaeger"
-# PATH = "D:\\workspace\\CNCF\\test"
+# 判断当前路径是否存在，没有则创建new文件夹
+if not os.path.exists(r"../result/"):
+        os.makedirs(r"../result/")
 
 log_file = open('../result/Word_Detail.log', encoding="utf-8", mode="w")
 logging.basicConfig(stream=log_file, format='%(asctime)s [%(levelname)s] %(message)s', level=logging.DEBUG)
@@ -166,6 +168,12 @@ def search(pwd):
 
 
 if __name__ == '__main__':
+    # path变量的值放入参数中获取
+    parser = argparse.ArgumentParser(usage="检查代码错误", description="helpinfo.")
+    parser.add_argument("path", help="待检查代码的路径")
+    args = parser.parse_args()
+    PATH = args.path
+
     init_ignore_word()
     search(PATH)
     print_wrong()
