@@ -69,9 +69,10 @@ def add_wrong(word):
 
 
 def print_wrong():
+    sort_keys = sorted(WRONG_WORD.keys())
     logging.info("错误单词：\n")
-    for _word in WRONG_WORD:
-        logging.debug("===>【%s】【%d】" % (_word, WRONG_WORD[_word]))
+    for _word in sort_keys:
+        logging.debug("===>【%d】    %s" % (WRONG_WORD[_word], _word))
 
 
 def ignore_word(word):
@@ -96,6 +97,10 @@ def check_line(filename, line_num, src_line):
 
     # 如果这一行中含有网址，则大概率存在非正常单词，可以直接跳过
     if 'http://' in src_line or 'https://' in src_line:
+        return
+
+    # 如果这一行含有github.com，则大概率存在非正常单词，这种可以直接跳过
+    if 'github.com' in src_line:
         return
 
     # 替换文件内容中的特殊字符
