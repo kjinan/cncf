@@ -4,35 +4,47 @@ import logging
 
 import enchant
 
-from util.cncf_util import have_no_letter, special_char_to_blank, camel_to_snake_case
+from util.cncf_util import have_no_letter, special_char_to_blank, camel_to_snake_case, is_code_file_code_line
 
 d = enchant.Dict("en_US")
 # print d.check("Hello")
 # print d.check("Helo")
 
-PATH = "D:\\workspace\\CNCF\\prometheus\\tsdb"
+PATH = "D:\\workspace\\CNCF\\jaeger"
 # PATH = "D:\\workspace\\CNCF\\test"
 
 log_file = open('../result/Word_Detail.log', encoding="utf-8", mode="w")
 logging.basicConfig(stream=log_file, format='%(asctime)s [%(levelname)s] %(message)s', level=logging.DEBUG)
 
-global WRONG_WORD, IGNORE_WORD, IGNORE_FILE_SUFFIX, IGNORE_PATH, FAIL_OPENED_FILES
+global WRONG_WORD, IGNORE_WORD, IGNORE_FILE_NAME, IGNORE_FILE_SUFFIX, IGNORE_PATH, FAIL_OPENED_FILES
 # 检查结果
 WRONG_WORD = dict()
-
+# 忽略检查的目录
+IGNORE_PATH = ['.circleci', '.git', '.github']
+# 忽略检查的文件
+IGNORE_FILE_NAME = [
+    # git相关
+    '.gitignore', '.gitmodules', 'CHANGELOG.md', 'SECURITY.md',
+    'CODEOWNERS', 'DCO', 'LICENSE', 'CONTRIBUTING.md', 'CONTRIBUTING_GUIDELINES.md',
+    # go相关
+    'go.mod', 'go.sum',
+    'Dockerfile', 'Makefile',
+]
 # 忽略检查的后缀
 IGNORE_FILE_SUFFIX = [
     # 图片
     'png', 'svg', 'jpg', 'gif', 'ico', 'eps', 'bmp',
     # 字体
     'woff', 'woff2', 'ttf', 'eot',
-    # js文件不扫描
-    'js',
+    # 证书文件
+    'pem',
+    # js/html等特定的UI文件不扫描
+    'js', 'html', 'toml',
+    # 好像是jeager项目的特殊文件
+    'nocover', 'libsonnet',
     # 其他类型
-    'iso', 'json',
+    'iso', 'json', 'yml', 'rollover', 'yaml', 'tmpl', 'mk',
 ]
-# 忽略检查的目录
-IGNORE_PATH = ['.circleci', '.git', '.github']
 
 # 未能成功检查的文件
 FAIL_OPENED_FILES = []
@@ -68,8 +80,8 @@ def ignore_word(word):
 
 
 def check_line(filename, line_num, src_line):
-    # go文件，不是以“//”开头的注释内容，不检查
-    if filename.endswith('.go') and (not src_line.startswith('//') or src_line.startswith('// TODO')):
+    # go/python/sh等代码文件中，非注释内容，不检查
+    if is_code_file_code_line(filename, src_line):
         return
 
     # 如果这一行是空行或没有英文字母，则直接跳过
@@ -95,6 +107,10 @@ def check_line(filename, line_num, src_line):
 
 
 def check_word(filename, line_num, line, word):
+    # 如果少于五个字母，则大概率是各种缩写什么的，直接忽略
+    if len(word) < 5:
+        return
+
     if ignore_word(word):
         return
 
@@ -115,6 +131,10 @@ def search(pwd):
             continue
 
         for file in files:
+            # 跳过不扫描的文件
+            if file in IGNORE_FILE_NAME:
+                continue
+
             # 跳过不扫描的文件类型
             file_suffix = file.split('.')[-1]
             if not file_suffix:

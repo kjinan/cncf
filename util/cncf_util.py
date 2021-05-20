@@ -1,6 +1,22 @@
 import re
 
 
+# 判断是否是具体的代码
+def is_code_file_code_line(filename, line):
+    _line = line.strip()
+    # go文件
+    if (filename.endswith('.go') or filename.endswith('.proto')) and not _line.startswith('//'):
+        return True
+    # py文件
+    if filename.endswith('.py') and not _line.startswith('#'):
+        return True
+    # sh文件
+    if filename.endswith('.sh') and not _line.startswith('#'):
+        return True
+
+    return False
+
+
 # 特殊字符替换成空格
 def special_char_to_blank(text):
     result = re.sub('[^a-zA-Z\n\.]', ' ', text)
@@ -45,4 +61,3 @@ if __name__ == '__main__':
 
     print("{} => {}".format(camel_text, snake_text))
     print(camel_text.lower().replace('_', '') == snake_text.replace('_', ''))
-
