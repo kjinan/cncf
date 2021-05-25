@@ -69,10 +69,16 @@ def add_wrong(word):
 
 
 def print_wrong():
-    sort_keys = sorted(WRONG_WORD.keys())
+    # 按单词首字母排序
+    # sort_keys = sorted(WRONG_WORD.keys())
+    # for _word in sort_keys:
+    #     logging.debug("===>【%d】    %s" % (WRONG_WORD[_word], _word))
+
+    # 按单词错误次数排序
+    sort_keys = sorted(WRONG_WORD.items(), key=lambda x: x[1])
     logging.info("错误单词：\n")
     for _word in sort_keys:
-        logging.debug("===>【%d】    %s" % (WRONG_WORD[_word], _word))
+        logging.debug("===>【%d】    %s" % (_word[1], _word[0]))
 
 
 def ignore_word(word):
