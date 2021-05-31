@@ -9,7 +9,7 @@ f.truncate()
 f.flush()
 
 # 将内容排重、排序后重新写入
-new_contents = [item.replace(' ', '') for item in set(contents)]
+new_contents = [item.replace(' ', '').replace('\t', '').lower() for item in set(contents)]
 new_contents.sort()
 f.writelines(new_contents)
 f.flush()

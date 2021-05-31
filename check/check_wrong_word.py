@@ -13,7 +13,7 @@ d = enchant.Dict("en_US")
 
 # 判断当前路径是否存在，没有则创建new文件夹
 if not os.path.exists(r"../result/"):
-        os.makedirs(r"../result/")
+    os.makedirs(r"../result/")
 
 log_file = open('../result/Word_Detail.log', encoding="utf-8", mode="w")
 logging.basicConfig(stream=log_file, format='%(asctime)s [%(levelname)s] %(message)s', level=logging.DEBUG)
@@ -22,15 +22,16 @@ global WRONG_WORD, IGNORE_WORD, IGNORE_FILE_NAME, IGNORE_FILE_SUFFIX, IGNORE_PAT
 # 检查结果
 WRONG_WORD = dict()
 # 忽略检查的目录
-IGNORE_PATH = ['.circleci', '.git', '.github']
+IGNORE_PATH = []
 # 忽略检查的文件
 IGNORE_FILE_NAME = [
     # git相关
-    '.gitignore', '.gitmodules', 'CHANGELOG.md', 'SECURITY.md',
-    'CODEOWNERS', 'DCO', 'LICENSE', 'CONTRIBUTING.md', 'CONTRIBUTING_GUIDELINES.md',
+    'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md',
+    'CONTRIBUTING_GUIDELINES.md', 'MAINTAINERS.md', 'RELEASE.md', '', '',
     # go相关
     'go.mod', 'go.sum',
-    'Dockerfile', 'Makefile',
+    # 几个比较大的文件
+    'compute-gen.go'
 ]
 # 忽略检查的后缀
 IGNORE_FILE_SUFFIX = [
@@ -39,13 +40,20 @@ IGNORE_FILE_SUFFIX = [
     # 字体
     'woff', 'woff2', 'ttf', 'eot',
     # 证书文件
-    'pem',
+    'pem', 'pub', 'key', 'crt',
     # js/html等特定的UI文件不扫描
-    'js', 'html', 'toml',
+    'js', 'html', 'toml', 'css', 'lib', 'snap',
+    'webmanifest', 'scss', 'map', 'tsx', 'ts', 'less',
     # 好像是jeager项目的特殊文件
-    'nocover', 'libsonnet',
+    'nocover', 'libsonnet', 'rst', 'tf', 'com_policy', 'ttar',
+    'proto', 'com_user_data',
     # 其他类型
-    'iso', 'json', 'yml', 'rollover', 'yaml', 'tmpl', 'mk',
+    'iso', 'json', 'yml', 'rollover', 'yaml', 'tmpl',
+    'mk', 'xml', 'ini', 'conf', 'bazel', 'template',
+    'rl', 'rb', 'cfg', 's', 'idx', 'ai', 'pdf',
+    'psd', 'plist', 'pack', 'rc', 'bzl', 'lock',
+    'code', 'out', 'mkd', 'ps1', 'fuzz', 'MIT',
+    'j2', 'test', 'cer',
 ]
 
 # 未能成功检查的文件
@@ -70,15 +78,16 @@ def add_wrong(word):
 
 def print_wrong():
     # 按单词首字母排序
-    # sort_keys = sorted(WRONG_WORD.keys())
-    # for _word in sort_keys:
-    #     logging.debug("===>【%d】    %s" % (WRONG_WORD[_word], _word))
+    logging.info("错误单词-按字母顺序排序：")
+    sort_keys = sorted(WRONG_WORD.keys())
+    for _word in sort_keys:
+        logging.debug("%d\t%s" % (WRONG_WORD[_word], _word))
 
     # 按单词错误次数排序
+    logging.info("错误单词-按错误次数排序：")
     sort_keys = sorted(WRONG_WORD.items(), key=lambda x: x[1])
-    logging.info("错误单词：\n")
     for _word in sort_keys:
-        logging.debug("===>【%d】    %s" % (_word[1], _word[0]))
+        logging.debug("%d\t%s" % (_word[1], _word[0]))
 
 
 def ignore_word(word):
@@ -98,7 +107,7 @@ def check_line(filename, line_num, src_line):
         return
 
     # 如果这一行含有“==”，则大概率是注释的代码，可以直接跳过
-    if '==' in src_line or '+=' in src_line or '-=' in src_line:
+    if '==' in src_line or '+=' in src_line or '-=' in src_line or '>=' in src_line or '<=' in src_line:
         return
 
     # 如果这一行中含有网址，则大概率存在非正常单词，可以直接跳过
@@ -134,12 +143,17 @@ def check_word(filename, line_num, line, word):
 
 def search(pwd):
     for _path, dir, files in os.walk(pwd.strip()):
+        # 隐藏的目录不扫描
+        if "\\." in _path:
+            continue
+
         # 跳过忽略检查的目录
         ignore_path_flag = False
         for _ignore_path in IGNORE_PATH:
             if _ignore_path in _path:
                 ignore_path_flag = True
                 break
+
         if ignore_path_flag:
             continue
 
@@ -148,12 +162,17 @@ def search(pwd):
             if file in IGNORE_FILE_NAME:
                 continue
 
-            # 跳过不扫描的文件类型
-            file_suffix = file.split('.')[-1]
-            if not file_suffix:
-                print('~~~~~~~~~~~~~~~~~~~~~~~', file)
+            # 隐藏的文件、没有后缀名的文件 都不扫描
+            if file.startswith('.') or '.' not in file:
                 continue
-            if file_suffix in IGNORE_FILE_SUFFIX:
+
+            # 文件名中含有特殊单词的也不扫描
+            if 'LICENSE' in file:
+                continue
+
+            # 跳过不扫描的文件类型以及后缀名过长的文件
+            file_suffix = file.split('.')[-1]
+            if len(file_suffix) > 5 or file_suffix in IGNORE_FILE_SUFFIX:
                 continue
 
             # 尝试打开文件
